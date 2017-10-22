@@ -4,16 +4,22 @@ This module can be used to deploy smart contracts on any networks (ex. testnets,
 # Sample Use Case 
 ```js
 var helper = require('deploy_smart_contract');
-helper.setWeb3ToCurrentProvider(); // optional, write this if you're connecting to injected web3 like MetaMask or parity
+//helper.setWeb3ToCurrentProvider(); // optional, write this if you're connecting to injected web3 like MetaMask or parity
 
-source = "contract test { function hi() public returns (uint256) { return 123; }}"
-address = "your_account_address"
-pkey = "your_private_key"
-var contractAddress = helper.sendRawTnx(source, address, pkey); // TBC
-var myContract = helper.contractObject(source, contractAddress); // paste the contract address you just get
-console.log(myContract.hi.call().toNumber()); // should print out 123
-var contractBalance = helper.etherBalance(myContract) 
-console.log(contractBalance); // should be 0 if no ether is sent to the contract address
+source = "contract test { function hi() public returns (uint256) { return 123; }}";
+address = "your_account_address";
+pkey = "your_private_key";
+helper.sendRawTnx(source, address, pkey, function (err, address) {
+    if (!err) {
+        var contractAddress = address;
+        console.log('contract address:', address);
+        var myContract = helper.contractObject(source, contractAddress); 
+        console.log('call contract method:', myContract.hi.call().toNumber()); // should print out 123
+        var contractBalance = helper.etherBalance(myContract)
+        console.log('contract balance:', contractBalance); // should be 0 if no ether is sent to the contract address
+    } else console.error(err);
+
+});
 
 ```
 In the second line, run `helper.setWeb3Provider('your_provider')` instead if you want to specify other provider<br>
@@ -23,8 +29,8 @@ If you are using the rinkeby testnet, feel free to go to `https://rinkeby.ethers
 # List of available functions
 1. `contractName(source)`: return the contract name from contract source code
 2. `loadContract(path)`: return the source code in contract file (ex. myContract.sol)
-3. `sendRawTnx(source, address, pkey)`: given the contract source code, address to sign transaction, and private key string, create the contract object and deploy it onto the blockchain. After the contract is mined, it will return the contract address. <br>
-Note: The contract mining status is checked every 5 seconds.
+3. `sendRawTnx(source, address, pkey, _callback)`: given the contract source code, address to sign transaction, and private key string, create the contract object and deploy it onto the blockchain. After the contract is mined, the callback function will be fired to get the contract address. <br>
+Note: The contract mining status is checked every 2 seconds.
 4. `contractObject(source, contractAddress)`: return a contrat object to interact with the contract once it is deployed onto the blockchain  
 5. `etherBalance(contract)`: return the ether amount in the specified smart contract
 

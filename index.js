@@ -24,14 +24,14 @@ exports.loadContract = function (path) {
   return fs.readFileSync(path, 'utf8');
 }
 
-exports.sendRawTnx = function (source, address, pkey) {
+exports.sendRawTnx = function (source, address, pkey, _callback) {
   var compiled = solc.compile(source);
-  var contractName = contractName(source);
+  var contractName = this.contractName(source);
   var bytecode = compiled.contracts[[`:${contractName}`]]["bytecode"];
   var pkeyx = new Buffer(pkey, 'hex');
   var rawTx = {
     nonce: web3.eth.getTransactionCount(address),
-    gasPrice: '0x09184e72a000',
+    gasPrice: '0x09184e72a00',
     gasLimit: '0x271000',
     data: '0x' + bytecode
   }
@@ -40,28 +40,30 @@ exports.sendRawTnx = function (source, address, pkey) {
   var serializedTx = tx.serialize().toString('hex');
   web3.eth.sendRawTransaction('0x' + serializedTx, function (err, TnxHash) {
     if (err) {
-      console.error(err);
+      _callback(err, null);
     } else {
-      //console.log('transaction hash:', TnxHash);
-      setInterval(function () {
+      var interval = setInterval(function () {
         web3.eth.getTransaction(TnxHash, function (err, result) {
-          if (result.transactionIndex == null) {
-            //console.log('tnx is pending!');
-          } else {
-            var receipt = web3.eth.getTransactionReceipt(TnxHash);
-            var contractAddress = receipt.contractAddress;
-            //console.log('contract mined! contract address:', contractAddress);
-            return contractAddress;
+          if (result.transactionIndex != null) {
+            web3.eth.getTransactionReceipt(TnxHash, function (err, receipt) {
+              if (receipt) {
+                var contractAddress = receipt.contractAddress;
+                if (contractAddress) {
+                  clearInterval(interval);
+                  _callback(null, contractAddress);
+                }
+              }
+            });
           }
         });
-      }, 5000); // check every 5 sec if the contract has been mined 
+      }, 2000); // check every 2 sec if the contract has been mined 
     }
   });
 }
 
 exports.contractObject = function (source, contractAddress) {
   var compiled = solc.compile(source);
-  var contractName = contractName(source);
+  var contractName = this.contractName(source);
   var bytecode = compiled["contracts"][`:${contractName}`]["bytecode"];
   var abi = JSON.parse(compiled["contracts"][`:${contractName}`]["interface"]);
   var contract = web3.eth.contract(abi);

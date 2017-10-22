@@ -9,7 +9,7 @@ var helper = require('deploy_smart_contract');
 source = "contract test { function hi() public returns (uint256) { return 123; }}";
 address = "your_account_address";
 pkey = "your_private_key";
-helper.sendRawTnx(source, address, pkey, function (err, address) {
+helper.sendRawTnx(source, address, pkey, function (err, address) { // then wait for the contract to be mined. The waiting time depends on the connected network
     if (!err) {
         var contractAddress = address;
         console.log('contract address:', address);

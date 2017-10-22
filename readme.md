@@ -34,6 +34,8 @@ contract balance: 0 // if no ether is sent to this contract address
 * If you are using the rinkeby testnet, feel free to go to `https://rinkeby.etherscan.io/address/<your_account_address>` to see the transactions' status 
 
 # List of available functions
+1. `setWeb3Provider(provider)`: set web3 provider to the specific provider
+2. `setWeb3ToCurrentProvider()`: set web3 provider to current provider, often used for injected web3
 1. `contractName(source)`: return the contract name from contract source code
 2. `loadContract(path)`: return the source code in contract file (ex. myContract.sol)
 3. `sendRawTnx(source, address, pkey, _callback)`: given the contract source code, address to sign transaction, and private key string, create the contract object and deploy it onto the blockchain. After the contract is mined, the callback function will be fired to get the contract address. <br>

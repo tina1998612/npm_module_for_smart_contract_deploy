@@ -25,7 +25,7 @@ function loadContract(path) {
 
 function sendRawTnx(source, address, pkey) {
   var compiled = solc.compile(source);
-  var contractName = this.contractName(source);
+  var contractName = contractName(source);
   var bytecode = compiled.contracts[[`:${contractName}`]]["bytecode"];
   var pkeyx = new Buffer(pkey, 'hex');
   var rawTx = {
@@ -60,7 +60,7 @@ function sendRawTnx(source, address, pkey) {
 
 function contractObject(source, contractAddress) {
   var compiled = solc.compile(source);
-  var contractName = this.contractName(source);
+  var contractName = contractName(source);
   var bytecode = compiled["contracts"][`:${contractName}`]["bytecode"];
   var abi = JSON.parse(compiled["contracts"][`:${contractName}`]["interface"]);
   var contract = web3.eth.contract(abi);

@@ -2,89 +2,85 @@ var Tx = require('ethereumjs-tx');
 var Web3 = require('web3');
 var solc = require('solc');
 var fs = require('fs');
-var repl = require('repl');
-var SolidityFunction = require("web3/lib/web3/function")
-var web3 = new Web3(
-  new Web3.providers.HttpProvider('https://rinkeby.infura.io/')
-);
+var SolidityFunction = require("web3/lib/web3/function");
+var web3 = new Web3(new Web3.providers.HttpProvider('https://rinkeby.infura.io/')); // set default web3 provider 
 
-class Helper {
+function setWeb3Provider(provider) { // allow customization of web3 provider 
+  web3 = new Web3(new Web3.providers.HttpProvider(provider));
+}
 
-  contractName(source) {
-    var re1 = /contract.*{/g;
-    var re2 = /\s\w+\s/;
-    return source.match(re1).pop().match(re2)[0].trim();
+function setWeb3ToCurrentProvider() {
+  web3 = new Web3(web3.currentProvider);
+}
+
+function contractName(source) {
+  var re1 = /contract.*{/g;
+  var re2 = /\s\w+\s/;
+  return source.match(re1).pop().match(re2)[0].trim();
+}
+
+function loadContract(path) {
+  return fs.readFileSync(path, 'utf8');
+}
+
+function sendRawTnx(source, address, pkey) {
+  var compiled = solc.compile(source);
+  var contractName = this.contractName(source);
+  var bytecode = compiled.contracts[[`:${contractName}`]]["bytecode"];
+  var pkeyx = new Buffer(pkey, 'hex');
+  var rawTx = {
+    nonce: web3.eth.getTransactionCount(address),
+    gasPrice: '0x09184e72a000',
+    gasLimit: '0x271000',
+    data: '0x' + bytecode
   }
-
-  loadContract(path) {
-    return fs.readFileSync(path, 'utf8');
-  }
-
-  sendRawTnx(source, address, pkey) {
-    var compiled = solc.compile(source);
-    var contractName = this.contractName(source);
-    var bytecode = compiled.contracts[[`:${contractName}`]]["bytecode"];
-    var pkeyx = new Buffer(pkey, 'hex');
-    var rawTx = {
-      nonce: web3.eth.getTransactionCount(address),
-      gasPrice: '0x09184e72a000',
-      gasLimit: '0x271000',
-      data: '0x' + bytecode
+  var tx = new Tx(rawTx);
+  tx.sign(pkeyx);
+  var serializedTx = tx.serialize().toString('hex');
+  web3.eth.sendRawTransaction('0x' + serializedTx, function (err, TnxHash) {
+    if (err) {
+      console.error(err);
+    } else {
+      //console.log('transaction hash:', TnxHash);
+      setInterval(function () {
+        web3.eth.getTransaction(TnxHash, function (err, result) {
+          if (result.transactionIndex == null) {
+            //console.log('tnx is pending!');
+          } else {
+            var receipt = web3.eth.getTransactionReceipt(TnxHash);
+            var contractAddress = receipt.contractAddress;
+            //console.log('contract mined! contract address:', contractAddress);
+            return contractAddress;
+          }
+        });
+      }, 5000); // check every 5 sec if the contract has been mined 
     }
-    var tx = new Tx(rawTx);
-    tx.sign(pkeyx);
-    var serializedTx = tx.serialize().toString('hex');
-    web3.eth.sendRawTransaction('0x' + serializedTx, function (err, TnxHash) {
-      if (err) {
-        console.log(err);
+  });
+}
+
+function contractObject(source, contractAddress) {
+  var compiled = solc.compile(source);
+  var contractName = this.contractName(source);
+  var bytecode = compiled["contracts"][`:${contractName}`]["bytecode"];
+  var abi = JSON.parse(compiled["contracts"][`:${contractName}`]["interface"]);
+  var contract = web3.eth.contract(abi);
+
+  return contract.at(contractAddress);
+}
+
+function etherBalance(contract) {
+  switch (typeof (contract)) {
+    case "object":
+      if (contract.address) {
+        return web3.fromWei(web3.eth.getBalance(contract.address), 'ether').toNumber();
       } else {
-        console.log('transaction hash:', TnxHash);
-        setTimeout(function () {
-          web3.eth.getTransaction(TnxHash, function (err, result) {
-            if (result.transactionIndex == null) {
-              console.log('tnx is pending!');
-            } else {
-              var receipt = web3.eth.getTransactionReceipt(TnxHash);
-              var contractAddress = receipt.contractAddress;
-              console.log('contract mined! contract address:', contractAddress);
-            }
-          });
-        }, 30000); // wait 35s for the tnx to be mined (the avg block mining time is around 25s)
+        return new Error("cannot call getEtherBalance on an object that does not have a property 'address'");
       }
-    });
-  }
-
-  contractObject(source, contractAddress) {
-    var compiled = solc.compile(source);
-    var contractName = this.contractName(source);
-    var bytecode = compiled["contracts"][`:${contractName}`]["bytecode"];
-    var abi = JSON.parse(compiled["contracts"][`:${contractName}`]["interface"]);
-    var contract = web3.eth.contract(abi);
-
-    return contract.at(contractAddress);
-  }
-
-  etherBalance(contract) {
-    switch (typeof (contract)) {
-      case "object":
-        if (contract.address) {
-          return web3.fromWei(web3.eth.getBalance(contract.address), 'ether').toNumber();
-        } else {
-          return new Error("cannot call getEtherBalance on an object that does not have a property 'address'");
-        }
-        break
-      case "string":
-        return web3.fromWei(web3.eth.getBalance(contract), 'ether').toNumber();
-        break
-    }
-  }
-
- test() {
-    // try things here
-    console.log("test");
+      break
+    case "string":
+      return web3.fromWei(web3.eth.getBalance(contract), 'ether').toNumber();
+      break
   }
 }
 
-helper = new Helper();
 
-repl.start({});

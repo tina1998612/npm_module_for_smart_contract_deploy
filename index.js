@@ -1,3 +1,4 @@
+var exports = module.exports = {};
 var Tx = require('ethereumjs-tx');
 var Web3 = require('web3');
 var solc = require('solc');
@@ -5,25 +6,25 @@ var fs = require('fs');
 var SolidityFunction = require("web3/lib/web3/function");
 var web3 = new Web3(new Web3.providers.HttpProvider('https://rinkeby.infura.io/')); // set default web3 provider 
 
-function setWeb3Provider(provider) { // allow customization of web3 provider 
+exports.setWeb3Provider = function (provider) { // allow customization of web3 provider 
   web3 = new Web3(new Web3.providers.HttpProvider(provider));
 }
 
-function setWeb3ToCurrentProvider() {
+exports.setWeb3ToCurrentProvider = function () {
   web3 = new Web3(web3.currentProvider);
 }
 
-function contractName(source) {
+exports.contractName = function (source) {
   var re1 = /contract.*{/g;
   var re2 = /\s\w+\s/;
   return source.match(re1).pop().match(re2)[0].trim();
 }
 
-function loadContract(path) {
+exports.loadContract = function (path) {
   return fs.readFileSync(path, 'utf8');
 }
 
-function sendRawTnx(source, address, pkey) {
+function sendRawTnx = function(source, address, pkey) {
   var compiled = solc.compile(source);
   var contractName = contractName(source);
   var bytecode = compiled.contracts[[`:${contractName}`]]["bytecode"];
@@ -58,7 +59,7 @@ function sendRawTnx(source, address, pkey) {
   });
 }
 
-function contractObject(source, contractAddress) {
+exports.contractObject = function (source, contractAddress) {
   var compiled = solc.compile(source);
   var contractName = contractName(source);
   var bytecode = compiled["contracts"][`:${contractName}`]["bytecode"];
@@ -68,7 +69,7 @@ function contractObject(source, contractAddress) {
   return contract.at(contractAddress);
 }
 
-function etherBalance(contract) {
+exports.etherBalance = function (contract) {
   switch (typeof (contract)) {
     case "object":
       if (contract.address) {

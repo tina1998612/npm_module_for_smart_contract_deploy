@@ -9,22 +9,29 @@ var helper = require('deploy_smart_contract');
 source = "contract test { function hi() public returns (uint256) { return 123; }}";
 address = "your_account_address";
 pkey = "your_private_key";
-helper.sendRawTnx(source, address, pkey, function (err, address) { // then wait for the contract to be mined. The waiting time depends on the connected network
+// After sending the transaction, wait for the contract to be mined. The waiting time depends on the connected network (can be around 30 seconds)
+helper.sendRawTnx(source, address, pkey, function (err, address) { 
     if (!err) {
         var contractAddress = address;
         console.log('contract address:', address);
         var myContract = helper.contractObject(source, contractAddress); 
-        console.log('call contract method:', myContract.hi.call().toNumber()); // should print out 123
-        var contractBalance = helper.etherBalance(myContract)
-        console.log('contract balance:', contractBalance); // should be 0 if no ether is sent to the contract address
+        console.log('call contract method:', myContract.hi.call().toNumber()); 
+        var contractBalance = helper.etherBalance(myContract);
+        console.log('contract balance:', contractBalance); 
     } else console.error(err);
-
 });
 
 ```
-In the second line, run `helper.setWeb3Provider('your_provider')` instead if you want to specify other provider<br>
-If no web3 provider is defined, the default is the rinkeby infura endpoint(your smart contract will be deployed onto the rinkeby testnet)<br>
-If you are using the rinkeby testnet, feel free to go to `https://rinkeby.etherscan.io/address/<your_account_address>` to see the transactions' status 
+## Output
+```js
+contract address: 'your_contract_address'
+call contract method: 123
+contract balance: 0 // if no ether is sent to this contract address
+```
+# Notes
+* In the second line, run `helper.setWeb3Provider('your_provider')` instead if you want to specify other provider<br>
+* If no web3 provider is defined, the default is the rinkeby infura endpoint(your smart contract will be deployed onto the rinkeby testnet)<br>
+* If you are using the rinkeby testnet, feel free to go to `https://rinkeby.etherscan.io/address/<your_account_address>` to see the transactions' status 
 
 # List of available functions
 1. `contractName(source)`: return the contract name from contract source code

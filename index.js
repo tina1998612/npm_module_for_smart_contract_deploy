@@ -24,7 +24,7 @@ exports.loadContract = function (path) {
   return fs.readFileSync(path, 'utf8');
 }
 
-function sendRawTnx = function(source, address, pkey) {
+exports.sendRawTnx = function (source, address, pkey) {
   var compiled = solc.compile(source);
   var contractName = contractName(source);
   var bytecode = compiled.contracts[[`:${contractName}`]]["bytecode"];
